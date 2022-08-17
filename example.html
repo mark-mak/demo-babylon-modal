@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>Babylon.js sample code</title>
+
+    <!-- Babylon.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+    <script src="https://assets.babylonjs.com/generated/Assets.js"></script>
+    <script src="https://preview.babylonjs.com/ammo.js"></script>
+    <script src="https://preview.babylonjs.com/cannon.js"></script>
+    <script src="https://preview.babylonjs.com/Oimo.js"></script>
+    <script src="https://preview.babylonjs.com/earcut.min.js"></script>
+    <script src="https://preview.babylonjs.com/babylon.js"></script>
+    <script src="https://preview.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+    <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+    <script src="https://preview.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+    <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+    <script src="https://preview.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+    <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+    <script src="https://preview.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+
+    <style>
+        html,
+        body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        .overlay {
+            display: none;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
+        .overlayContainer {
+            position: absolute;
+            z-index: 1000;
+            top: 100%;
+            width: 300px;
+            height: 300px;
+            border: 5px double #BFBFBF;
+            box-shadow: 0px 1px 10px 0px #4F4F4F;
+            padding: 16px;
+            box-sizing: border-box;
+            background: white;
+            top: calc(50% - 300px / 2);
+            left: calc(50% - 300px / 2);
+        }
+
+        .overlay::before {
+            content: "";
+            position: fixed;
+            z-index: 10;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: green;
+            opacity: 0.4;
+        }
+
+        .link {
+            display: block;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <!-- ========= HTML start ========= -->
+    <div id="root">
+        <div id="overlayA" class="overlay">
+            <div class="overlayContainer">
+                <h1>Title A</h1>
+                <p>
+                    you may put contents here.
+                </p>
+                <a class="link" href="https://www.google.com" target="_blank">google</a>
+                <br />
+                <button id="closeButtonA" class="closeButton">close popup</button>
+            </div>
+        </div>
+        <div id="overlayB" class="overlay">
+            <div class="overlayContainer">
+                <h1>Title B</h1>
+                <p>
+                    you may put contents here.
+                </p>
+                <a class="link" href="https://www.twitter.com" target="_blank">twitter</a>
+                <br />
+                <button id="closeButtonB" class="closeButton">close popup</button>
+            </div>
+        </div>
+        <div id="overlayC" class="overlay">
+            <div class="overlayContainer">
+                <h1>Title C</h1>
+                <p>
+                    you may put contents here.
+                </p>
+                <a class="link" href="https://www.youtube.com" target="_blank">youtube</a>
+                <br />
+                <button id="closeButtonC" class="closeButton">close popup</button>
+            </div>
+        </div>
+        <div id="overlayD" class="overlay">
+            <div class="overlayContainer">
+                <h1>Title D</h1>
+                <p>
+                    you may put contents here.
+                </p>
+                <a class="link" href="https://www.facebook.com" target="_blank">facebook</a>
+                <br />
+                <button id="closeButtonD" class="closeButton">close popup</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+
+        var isBackwardFunc;
+        var mainland;
+        var animateCameraToMainLand;
+
+        var animateCamera = function (camera, newTarget) {
+            console.log('animateCamera', {
+                alpha: camera.alpha,
+                ca: camera.alpha / Math.PI,
+                beta: camera.beta,
+                radius: camera.radius,
+                x: newTarget.position.x,
+                y: newTarget.position.y,
+                z: newTarget.position.z,
+            })
+
+            const alpha = camera.alpha;
+            const beta = camera.beta;
+            const radius = camera.radius;
+            const target = camera.getTarget().clone();
+
+            camera.focusOn([newTarget], true);
+            camera.rebuildAnglesAndRadius();
+
+            var animCamAlpha = new BABYLON.Animation("animCam", "alpha", 30,
+                BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+                BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+
+            var keysAlpha = [];
+            keysAlpha.push({
+                frame: 0,
+                value: alpha
+            });
+            keysAlpha.push({
+                frame: 33,
+                value: camera.alpha
+            });
+            var animCamBeta = new BABYLON.Animation("animCam", "beta", 30,
+                BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+                BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+
+            var keysBeta = [];
+            keysBeta.push({
+                frame: 0,
+                value: beta
+            });
+            keysBeta.push({
+                frame: 33,
+                value: camera.beta
+            });
+            var animCamRadius = new BABYLON.Animation("animCam", "radius", 30,
+                BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+                BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+
+            var keysRadius = [];
+            keysRadius.push({
+                frame: 0,
+                value: radius
+            });
+            // set value to control the distance of camera
+            keysRadius.push({
+                frame: 33,
+                value: 16
+            });
+
+            var animCamTarget = new BABYLON.Animation("animTarget", "_target", 30,
+                BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
+                BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+
+            var keysTarget = [];
+            keysTarget.push({
+                frame: 0,
+                value: target
+            });
+            keysTarget.push({
+                frame: 33,
+                value: camera.target.clone()
+            });
+            animCamAlpha.setKeys(keysAlpha);
+            animCamBeta.setKeys(keysBeta);
+            animCamRadius.setKeys(keysRadius);
+            animCamTarget.setKeys(keysTarget);
+
+            camera.animations.push(animCamAlpha);
+            camera.animations.push(animCamBeta);
+            camera.animations.push(animCamRadius);
+            camera.animations.push(animCamTarget);
+
+            camera.alpha = alpha;
+            camera.beta = beta;
+            camera.radius = radius;
+            camera.target.copyFrom(target);
+
+            scene.beginAnimation(camera, 0, 33, false, 2, function () {
+
+            });
+
+        }
+
+        var startRenderLoop = function (engine, canvas) {
+            engine.runRenderLoop(function () {
+                if (sceneToRender && sceneToRender.activeCamera) {
+                    sceneToRender.render();
+                }
+            });
+        }
+
+        var engine = null;
+        var scene = null;
+        var sceneToRender = null;
+        var createDefaultEngine = function () { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, disableWebGL2Support: false }); };
+        var createScene = function () {
+            // This creates a basic Babylon Scene object (non-mesh)
+            var scene = new BABYLON.Scene(engine);
+
+            // This creates and positions a free camera (non-mesh)
+            // var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
+            var camera = new BABYLON.ArcRotateCamera("camera1", Math.PI / 2, Math.PI / 2, 15, new BABYLON.Vector3(0, 10, 0), scene);
+
+            // This targets the camera to scene origin
+            camera.setTarget(BABYLON.Vector3.Zero());
+
+            // This attaches the camera to the canvas
+            camera.attachControl(canvas, true);
+
+            // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
+            var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+            // Default intensity is 1. Let's dim the light a small amount
+            light.intensity = 0.7;
+
+
+
+
+
+            ///APPROACH 1:
+            BABYLON.SceneLoader.ImportMesh("", "https://raw.githubusercontent.com/mark-mak/demo-babylon-modal/main/ChristmasTree/", "ChristmasTree.gltf", scene, function (newMeshes) {
+                var meshVar = newMeshes[0];
+                mainland = meshVar;
+                console.log('mainland', mainland);
+
+                newMeshes.forEach((mesh) => {
+                    if (mesh.getTotalVertices() > 0) {
+                        // mesh.position.x = 4;
+                        // mesh.position.y = 0;
+                        // mesh.position.z = 4;
+                        mesh.scaling.x = 0.1;
+                        mesh.scaling.y = 0.1;
+                        mesh.scaling.z = 0.1;
+                        mesh.actionManager = new BABYLON.ActionManager(scene);
+                        mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
+                            // alert("Chi!!!");
+                            console.log('ChristmasTree.gltf');
+                        }))
+                    }
+                });
+            })
+            BABYLON.SceneLoader.ImportMesh("", "https://models.babylonjs.com/Marble/marble/", "marble.gltf", scene, function (newMeshes) {
+                var meshVar = newMeshes[0];
+
+                newMeshes.forEach((mesh) => {
+                    if (mesh.getTotalVertices() > 0) {
+                        mesh.position.x = 4;
+                        mesh.position.y = 2;
+                        mesh.position.z = 4;
+                        // mesh.scaling.x = 0.1;
+                        // mesh.scaling.y = 0.1;
+                        // mesh.scaling.z = 0.1;
+                        mesh.actionManager = new BABYLON.ActionManager(scene);
+                        mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
+                            // alert("Ball!!! 4, 4");
+                            console.log('Ball A');
+                        }))
+                    }
+                });
+            })
+            BABYLON.SceneLoader.ImportMesh("", "https://models.babylonjs.com/Marble/marble/", "marble.gltf", scene, function (newMeshes) {
+                var meshVar = newMeshes[0];
+
+                newMeshes.forEach((mesh) => {
+                    if (mesh.getTotalVertices() > 0) {
+                        mesh.position.x = -4;
+                        mesh.position.y = 2;
+                        mesh.position.z = 4;
+                        // mesh.scaling.x = 0.1;
+                        // mesh.scaling.y = 0.1;
+                        // mesh.scaling.z = 0.1;
+                        mesh.actionManager = new BABYLON.ActionManager(scene);
+                        mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
+                            // alert("Ball!!! -4 4");
+                            console.log('Ball B');
+                        }))
+                    }
+                });
+            })
+            BABYLON.SceneLoader.ImportMesh("", "https://models.babylonjs.com/Marble/marble/", "marble.gltf", scene, function (newMeshes) {
+                var meshVar = newMeshes[0];
+
+                newMeshes.forEach((mesh) => {
+                    if (mesh.getTotalVertices() > 0) {
+                        mesh.position.x = -4;
+                        mesh.position.y = 2;
+                        mesh.position.z = -4;
+                        // mesh.scaling.x = 0.1;
+                        // mesh.scaling.y = 0.1;
+                        // mesh.scaling.z = 0.1;
+                        mesh.actionManager = new BABYLON.ActionManager(scene);
+                        mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
+                            // alert("Ball!!! -4 -4");
+                            console.log('Ball C');
+                        }))
+                    }
+                });
+            })
+            BABYLON.SceneLoader.ImportMesh("", "https://models.babylonjs.com/Marble/marble/", "marble.gltf", scene, function (newMeshes) {
+                var meshVar = newMeshes[0];
+
+                newMeshes.forEach((mesh) => {
+                    if (mesh.getTotalVertices() > 0) {
+                        mesh.position.x = 4;
+                        mesh.position.y = 2;
+                        mesh.position.z = -4;
+                        // mesh.scaling.x = 0.1;
+                        // mesh.scaling.y = 0.1;
+                        // mesh.scaling.z = 0.1;
+                        mesh.actionManager = new BABYLON.ActionManager(scene);
+                        mesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
+                            // alert("Ball!!! 4, -4");
+                            console.log('Ball D');
+                        }))
+                    }
+                });
+            })
+
+            scene.onPointerDown = function (evt, pickInfo) {
+                if (pickInfo.hit) {
+                    const { x, z } = pickInfo.pickedMesh.position;
+                    const isMainland = x === 0 && z === 0;
+
+                    // camera.focusOn([pickInfo.pickedMesh], true);
+                    console.log('onPointerDown', pickInfo.pickedMesh);
+
+                    // assign 
+                    if (mainland && !isBackwardFunc) {
+                        animateCameraToMainLand = () => {
+                            animateCamera(camera, mainland);
+                        }
+                    }
+
+                    if (!isMainland) {
+                        animateCamera(camera, pickInfo.pickedMesh);
+                    }
+
+                    // could use pickInfo.pickedMesh.name or pickInfo.pickedMesh.id instead of position
+                    if (x === 4 && z === 4) {
+                        document.querySelector('#overlayA').classList.add('active');
+                    }
+                    if (x === -4 && z === 4) {
+                        document.querySelector('#overlayB').classList.add('active');
+                    }
+                    if (x === -4 && z === -4) {
+                        document.querySelector('#overlayC').classList.add('active');
+                    }
+                    if (x === 4 && z === -4) {
+                        document.querySelector('#overlayD').classList.add('active');
+                    }
+                }
+            }
+
+            scene.activeCamera.useAutoRotationBehavior = true;
+
+            return scene;
+        };
+        window.initFunction = async function () {
+
+
+            var asyncEngineCreation = async function () {
+                try {
+                    return createDefaultEngine();
+                } catch (e) {
+                    console.log("the available createEngine function failed. Creating the default engine instead");
+                    return createDefaultEngine();
+                }
+            }
+
+            window.engine = await asyncEngineCreation();
+            if (!engine) throw 'engine should not be null.';
+            startRenderLoop(engine, canvas);
+            window.scene = createScene();
+        };
+        initFunction().then(() => {
+            sceneToRender = scene
+        });
+
+        // Resize
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+
+        function closePopup(targetId) {
+            console.log('click closePopup');
+            document.querySelector(targetId).classList.remove('active');
+            animateCameraToMainLand();
+        }
+
+        document.querySelector('#closeButtonA').addEventListener('click', () => {
+            closePopup('#overlayA');
+        });
+        document.querySelector('#closeButtonB').addEventListener('click', () => {
+            closePopup('#overlayB');
+        });
+        document.querySelector('#closeButtonC').addEventListener('click', () => {
+            closePopup('#overlayC');
+        });
+        document.querySelector('#closeButtonD').addEventListener('click', () => {
+            closePopup('#overlayD');
+        });
+    </script>
+</body>
+
+</html>
